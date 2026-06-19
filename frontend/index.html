@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>공공기관 주차 예약 시스템</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1a6bcc;
+      --blue-light: #e8f0fb;
+      --blue-dark: #0f4a9c;
+      --gray-bg: #f5f7fa;
+      --gray-border: #dde2ea;
+      --gray-text: #6b7585;
+      --red: #e03c3c;
+      --green: #1aaa55;
+      --white: #ffffff;
+      --black: #1a1f2e;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+      background: var(--gray-bg);
+      color: var(--black);
+      min-height: 100vh;
+    }
+
+    /* AUTH */
+    #auth-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a6bcc 0%, #0f4a9c 100%);
+    }
+
+    .auth-box {
+      background: white;
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+
+    .auth-box h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .auth-box p {
+      color: var(--gray-text);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--gray-border);
+      margin-bottom: 28px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-text);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+
+    .auth-tab.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--black);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: var(--blue);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn-primary:hover { background: var(--blue-dark); }
+
+    .error-msg {
+      color: var(--red);
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    /* APP */
+    #app-screen { display: none; }
+
+    header {
+      background: var(--blue);
+      color: white;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 58px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    header h1 { font-size: 17px; font-weight: 700; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .user-badge {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .btn-logout {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-logout:hover { background: rgba(255,255,255,0.25); }
+
+    nav {
+      background: white;
+      border-bottom: 1px solid var(--gray-border);
+      display: flex;
+      padding: 0 24px;
+      gap: 0;
+    }
+
+    .nav-tab {
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-text);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+
+    .nav-tab.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
+    }
+
+    .page { display: none; padding: 28px 24px; max-width: 900px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--black);
+    }
+
+    /* FACILITY SELECT */
+    .facility-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .facility-card {
+      border: 2px solid var(--gray-border);
+      border-radius: 10px;
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .facility-card:hover { border-color: var(--blue); background: var(--blue-light); }
+    .facility-card.selected { border-color: var(--blue); background: var(--blue-light); }
+
+    .facility-card .icon { font-size: 28px; margin-bottom: 8px; }
+    .facility-card .name { font-size: 14px; font-weight: 600; }
+    .facility-card .slots {
+      font-size: 12px;
+      color: var(--gray-text);
+      margin-top: 4px;
+    }
+
+    .facility-card .avail {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 4px;
+      color: var(--green);
+    }
+
+    /* DATETIME */
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+    select, input[type="date"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      background: white;
+      cursor: pointer;
+    }
+
+    select:focus, input[type="date"]:focus { border-color: var(--blue); }
+
+    /* PARKING GRID */
+    .lot-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-text);
+      margin-bottom: 10px;
+    }
+
+    .parking-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .slot {
+      aspect-ratio: 1.4;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s;
+      border: 2px solid transparent;
+    }
+
+    .slot.available {
+      background: #e8f5ee;
+      color: var(--green);
+      border-color: #b8dfc8;
+    }
+
+    .slot.available:hover {
+      background: var(--green);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .slot.taken {
+      background: #fdecea;
+      color: #c0392b;
+      border-color: #f5c0bb;
+      cursor: not-allowed;
+    }
+
+    .slot.selected-slot {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue-dark);
+      transform: scale(1.05);
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      font-size: 12px;
+      color: var(--gray-text);
+      margin-bottom: 20px;
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+    }
+
+    .dot-available { background: #e8f5ee; border: 1.5px solid #b8dfc8; }
+    .dot-taken { background: #fdecea; border: 1.5px solid #f5c0bb; }
+    .dot-selected { background: var(--blue); }
+
+    /* RESERVATION SUMMARY */
+    .summary-box {
+      background: var(--blue-light);
+      border: 1.5px solid #b3cff0;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .summary-box strong { color: var(--blue-dark); }
+
+    .btn-reserve {
+      width: 100%;
+      padding: 14px;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-reserve:hover { background: var(--blue-dark); }
+    .btn-reserve:disabled {
+      background: var(--gray-border);
+      color: var(--gray-text);
+      cursor: not-allowed;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--black);
+      color: white;
+      padding: 14px 28px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--red); }
+
+    /* RESERVATIONS LIST */
+    .reservation-item {
+      border: 1.5px solid var(--gray-border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .reservation-info { line-height: 1.7; }
+    .reservation-info .res-title { font-weight: 700; font-size: 15px; }
+    .reservation-info .res-detail { font-size: 13px; color: var(--gray-text); }
+
+    .res-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .res-badge.active { background: #e8f5ee; color: var(--green); }
+    .res-badge.cancelled { background: #fdecea; color: var(--red); }
+
+    .btn-cancel {
+      margin-top: 8px;
+      padding: 6px 14px;
+      background: white;
+      border: 1.5px solid var(--red);
+      color: var(--red);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-cancel:hover { background: var(--red); color: white; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--gray-text);
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; }
+
+    /* QR */
+    .qr-box {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .qr-code {
+      display: inline-block;
+      background: white;
+      border: 2px solid var(--gray-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 16px);
+      gap: 2px;
+    }
+
+    .qr-cell {
+      width: 16px;
+      height: 16px;
+      border-radius: 2px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h1>🅿️ 공공주차 예약</h1>
+    <p>공공기관 주차 자리를 미리 예약하세요</p>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">로그인</div>
+      <div class="auth-tab" onclick="switchTab('signup')">회원가입</div>
+    </div>
+
+    <div id="login-form">
+      <div class="form-group">
+        <label>이메일</label>
+        <input type="email" id="login-email" placeholder="example@email.com">
+      </div>
+      <div class="form-group">
+        <label>비밀번호</label>
+        <input type="password" id="login-pw" placeholder="비밀번호 입력">
+      </div>
+      <button class="btn-primary" onclick="doLogin()">로그인</button>
+      <div class="error-msg" id="login-error">이메일 또는 비밀번호가 올바르지 않습니다.</div>
+    </div>
+
+    <div id="signup-form" style="display:none">
+      <div class="form-group">
+        <label>이름</label>
+        <input type="text" id="signup-name" placeholder="이름 입력">
+      </div>
+      <div class="form-group">
+        <label>이메일</label>
+        <input type="email" id="signup-email" placeholder="example@email.com">
+      </div>
+      <div class="form-group">
+        <label>비밀번호</label>
+        <input type="password" id="signup-pw" placeholder="8자 이상 입력">
+      </div>
+      <button class="btn-primary" onclick="doSignup()">회원가입</button>
+      <div class="error-msg" id="signup-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <header>
+    <h1>🅿️ 공공주차 예약</h1>
+    <div class="header-right">
+      <span class="user-badge" id="user-name-display"></span>
+      <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-tab active" onclick="showPage('reserve')">주차 예약</div>
+    <div class="nav-tab" onclick="showPage('myres')">내 예약</div>
+  </nav>
+
+  <!-- 예약 페이지 -->
+  <div id="page-reserve" class="page active">
+    <div class="card">
+      <h2>1단계 — 기관 선택</h2>
+      <div class="facility-grid" id="facility-grid"></div>
+    </div>
+
+    <div class="card" id="step2-card" style="display:none">
+      <h2>2단계 — 날짜 및 시간 선택</h2>
+      <div class="row-2">
+        <div class="form-group" style="margin:0">
+          <label>날짜</label>
+          <input type="date" id="res-date">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>이용 시간</label>
+          <select id="res-time">
+            <option value="">시간 선택</option>
+            <option>09:00 ~ 10:00</option>
+            <option>10:00 ~ 11:00</option>
+            <option>11:00 ~ 12:00</option>
+            <option>13:00 ~ 14:00</option>
+            <option>14:00 ~ 15:00</option>
+            <option>15:00 ~ 16:00</option>
+            <option>16:00 ~ 17:00</option>
+            <option>17:00 ~ 18:00</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" style="width:auto;padding:10px 24px" onclick="loadSlots()">자리 조회</button>
+    </div>
+
+    <div class="card" id="step3-card" style="display:none">
+      <h2>3단계 — 주차 자리 선택</h2>
+      <div class="legend">
+        <span><div class="legend-dot dot-available"></div> 예약 가능</span>
+        <span><div class="legend-dot dot-taken"></div> 예약 불가</span>
+        <span><div class="legend-dot dot-selected"></div> 선택됨</span>
+      </div>
+      <div class="lot-label">A구역</div>
+      <div class="parking-grid" id="slot-grid-a"></div>
+      <div class="lot-label">B구역</div>
+      <div class="parking-grid" id="slot-grid-b"></div>
+    </div>
+
+    <div class="card" id="step4-card" style="display:none">
+      <h2>4단계 — 예약 확인</h2>
+      <div class="summary-box" id="summary-content"></div>
+      <button class="btn-reserve" onclick="confirmReservation()">예약 확정</button>
+    </div>
+  </div>
+
+  <!-- 내 예약 -->
+  <div id="page-myres" class="page">
+    <div class="section-title">내 예약 내역</div>
+    <div id="reservations-list"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ---- DATA ----
+  const FACILITIES = [
+    { id: 'lib', name: '시립 도서관', icon: '📚', total: 40 },
+    { id: 'city', name: '시청', icon: '🏛️', total: 60 },
+    { id: 'museum', name: '박물관', icon: '🏺', total: 30 },
+    { id: 'park', name: '공원', icon: '🌳', total: 25 },
+    { id: 'welfare', name: '복지관', icon: '🏥', total: 35 },
+    { id: 'sports', name: '체육관', icon: '🏟️', total: 50 },
+  ];
+
+  let users = JSON.parse(localStorage.getItem('pu_users') || '[]');
+  let reservations = JSON.parse(localStorage.getItem('pu_reservations') || '[]');
+  let currentUser = JSON.parse(localStorage.getItem('pu_current') || 'null');
+
+  let selectedFacility = null;
+  let selectedSlot = null;
+
+  // ---- AUTH ----
+  function switchTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0 && tab==='login') || (i===1 && tab==='signup')));
+    document.getElementById('login-form').style.display = tab==='login' ? 'block' : 'none';
+    document.getElementById('signup-form').style.display = tab==='signup' ? 'block' : 'none';
+  }
+
+  function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pw = document.getElementById('login-pw').value;
+    const user = users.find(u => u.email === email && u.pw === pw);
+    if (!user) {
+      document.getElementById('login-error').style.display = 'block';
+      return;
+    }
+    currentUser = user;
+    localStorage.setItem('pu_current', JSON.stringify(user));
+    enterApp();
+  }
+
+  function doSignup() {
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const pw = document.getElementById('signup-pw').value;
+    const err = document.getElementById('signup-error');
+
+    if (!name || !email || !pw) { err.style.display='block'; err.textContent='모든 항목을 입력해주세요.'; return; }
+    if (pw.length < 8) { err.style.display='block'; err.textContent='비밀번호는 8자 이상이어야 합니다.'; return; }
+    if (users.find(u => u.email === email)) { err.style.display='block'; err.textContent='이미 가입된 이메일입니다.'; return; }
+
+    const user = { id: Date.now(), name, email, pw };
+    users.push(user);
+    localStorage.setItem('pu_users', JSON.stringify(users));
+    currentUser = user;
+    localStorage.setItem('pu_current', JSON.stringify(user));
+    enterApp();
+  }
+
+  function doLogout() {
+    currentUser = null;
+    localStorage.removeItem('pu_current');
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    resetReservation();
+  }
+
+  function enterApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('user-name-display').textContent = currentUser.name + '님';
+    renderFacilities();
+    setMinDate();
+  }
+
+  // ---- APP ----
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    const idx = name === 'reserve' ? 0 : 1;
+    document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+    if (name === 'myres') renderReservations();
+  }
+
+  function setMinDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('res-date').min = today;
+    document.getElementById('res-date').value = today;
+  }
+
+  // ---- FACILITIES ----
+  function getAvailable(facilityId) {
+    const total = FACILITIES.find(f => f.id === facilityId).total;
+    const taken = reservations.filter(r => r.facilityId === facilityId && r.status === 'active').length;
+    return total - taken;
+  }
+
+  function renderFacilities() {
+    const grid = document.getElementById('facility-grid');
+    grid.innerHTML = FACILITIES.map(f => `
+      <div class="facility-card" id="fc-${f.id}" onclick="selectFacility('${f.id}')">
+        <div class="icon">${f.icon}</div>
+        <div class="name">${f.name}</div>
+        <div class="slots">총 ${f.total}면</div>
+        <div class="avail">잔여 ${getAvailable(f.id)}면</div>
+      </div>
+    `).join('');
+  }
+
+  function selectFacility(id) {
+    selectedFacility = id;
+    document.querySelectorAll('.facility-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('fc-' + id).classList.add('selected');
+    document.getElementById('step2-card').style.display = 'block';
+    document.getElementById('step3-card').style.display = 'none';
+    document.getElementById('step4-card').style.display = 'none';
+    selectedSlot = null;
+    document.getElementById('step2-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ---- SLOTS ----
+  function loadSlots() {
+    const date = document.getElementById('res-date').value;
+    const time = document.getElementById('res-time').value;
+    if (!date || !time) { showToast('날짜와 시간을 선택해주세요.', 'error'); return; }
+
+    selectedSlot = null;
+    document.getElementById('step4-card').style.display = 'none';
+
+    const takenSlots = reservations
+      .filter(r => r.facilityId === selectedFacility && r.date === date && r.time === time && r.status === 'active')
+      .map(r => r.slot);
+
+    renderSlotGrid('slot-grid-a', 'A', 10, takenSlots);
+    renderSlotGrid('slot-grid-b', 'B', 10, takenSlots);
+
+    document.getElementById('step3-card').style.display = 'block';
+    document.getElementById('step3-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function renderSlotGrid(gridId, zone, count, takenSlots) {
+    const grid = document.getElementById(gridId);
+    let html = '';
+    for (let i = 1; i <= count; i++) {
+      const slotId = zone + i;
+      const taken = takenSlots.includes(slotId);
+      html += `<div class="slot ${taken ? 'taken' : 'available'}" id="slot-${slotId}" onclick="${taken ? '' : `selectSlot('${slotId}')`}">${slotId}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function selectSlot(slotId) {
+    document.querySelectorAll('.slot.selected-slot').forEach(s => {
+      s.classList.remove('selected-slot');
+      s.classList.add('available');
+    });
+    const el = document.getElementById('slot-' + slotId);
+    el.classList.remove('available');
+    el.classList.add('selected-slot');
+    selectedSlot = slotId;
+
+    const facility = FACILITIES.find(f => f.id === selectedFacility);
+    const date = document.getElementById('res-date').value;
+    const time = document.getElementById('res-time').value;
+
+    document.getElementById('summary-content').innerHTML = `
+      <strong>기관:</strong> ${facility.icon} ${facility.name}<br>
+      <strong>날짜:</strong> ${date}<br>
+      <strong>시간:</strong> ${time}<br>
+      <strong>자리:</strong> ${slotId}구역
+    `;
+    document.getElementById('step4-card').style.display = 'block';
+    document.getElementById('step4-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ---- RESERVATION ----
+  function confirmReservation() {
+    if (!selectedSlot) return;
+    const date = document.getElementById('res-date').value;
+    const time = document.getElementById('res-time').value;
+    const facility = FACILITIES.find(f => f.id === selectedFacility);
+
+    const res = {
+      id: 'R' + Date.now(),
+      userId: currentUser.id,
+      facilityId: selectedFacility,
+      facilityName: facility.name,
+      facilityIcon: facility.icon,
+      date,
+      time,
+      slot: selectedSlot,
+      status: 'active',
+      createdAt: new Date().toLocaleString('ko-KR')
+    };
+
+    reservations.push(res);
+    localStorage.setItem('pu_reservations', JSON.stringify(reservations));
+    renderFacilities();
+    resetReservation();
+    showToast('✅ 예약이 완료되었습니다!', 'success');
+    setTimeout(() => { showPage('myres'); }, 1200);
+  }
+
+  function resetReservation() {
+    selectedFacility = null;
+    selectedSlot = null;
+    document.getElementById('step2-card').style.display = 'none';
+    document.getElementById('step3-card').style.display = 'none';
+    document.getElementById('step4-card').style.display = 'none';
+    document.querySelectorAll('.facility-card').forEach(c => c.classList.remove('selected'));
+  }
+
+  // ---- MY RESERVATIONS ----
+  function renderReservations() {
+    const list = document.getElementById('reservations-list');
+    const myRes = reservations.filter(r => r.userId === currentUser.id).reverse();
+
+    if (myRes.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="icon">🅿️</div><p>예약 내역이 없습니다.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = myRes.map(r => `
+      <div class="reservation-item">
+        <div class="reservation-info">
+          <div class="res-title">${r.facilityIcon} ${r.facilityName} — ${r.slot}구역</div>
+          <div class="res-detail">${r.date} · ${r.time}</div>
+          <div class="res-detail">예약번호: ${r.id}</div>
+          ${r.status === 'active' ? `<button class="btn-cancel" onclick="cancelReservation('${r.id}')">예약 취소</button>` : ''}
+        </div>
+        <div>
+          <span class="res-badge ${r.status === 'active' ? 'active' : 'cancelled'}">${r.status === 'active' ? '예약중' : '취소됨'}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function cancelReservation(id) {
+    if (!confirm('예약을 취소하시겠습니까?')) return;
+    const r = reservations.find(r => r.id === id);
+    if (r) r.status = 'cancelled';
+    localStorage.setItem('pu_reservations', JSON.stringify(reservations));
+    renderReservations();
+    renderFacilities();
+    showToast('예약이 취소되었습니다.', 'error');
+  }
+
+  // ---- TOAST ----
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ---- INIT ----
+  if (currentUser) {
+    enterApp();
+  }
+</script>
+</body>
+</html>
